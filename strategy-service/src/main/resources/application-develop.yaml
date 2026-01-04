@@ -1,59 +1,110 @@
+# ============================================
+# Strategy Service 开发环境配置
+# ============================================
+
+# 高频交易（HFT）配置
 hft:
+  # 交易模式：PAPER（模拟交易）或 LIVE（实盘交易）
   mode: PAPER
+  # 事件发布配置
   events:
     enabled: true
+    # 市场 WebSocket 快照发布间隔（毫秒）
     market-ws-snapshot-publish-millis: 1000
+    # 启动时发布市场 WebSocket 缓存
     market-ws-cache-publish-on-start: true
+  # 执行器服务配置
   executor:
-    base-url: http://localhost:8080
+    # 执行器服务基础 URL，可通过环境变量覆盖
+    base-url: ${EXECUTOR_SERVICE_URL:http://localhost:8080}
+    # 是否发送实盘确认
     send-live-ack: false
+  # Polymarket 相关配置
   polymarket:
+    # 启用市场 WebSocket 连接
     market-ws-enabled: true
+    # Gamma API URL（用于获取市场概率）
     gamma-url: https://gamma-api.polymarket.com
+    # WebSocket 缓存文件路径
     market-ws-cache-path: .cache/ws/market-ws-cache.strategy.json
+    # WebSocket 缓存刷新间隔（毫秒）
     market-ws-cache-flush-millis: 5000
+  # 策略配置
   strategy:
+    # GABAGOOL 策略配置（完整套利策略）
     gabagool:
+      # 是否启用策略
       enabled: true
+      # 策略刷新间隔（毫秒）
       refresh-millis: 500
-      min-replace-millis: 500           # Min time before replacing an order
+      # 替换订单前的最小时间间隔（毫秒）
+      min-replace-millis: 500
+      # 最小距离市场结束时间（秒），0 表示不限制
       min-seconds-to-end: 0
+      # 最大距离市场结束时间（秒），超过此时间不交易
       max-seconds-to-end: 3600
+      # 改善报价的 tick 数（0 表示不改善）
       improve-ticks: 0
 
-      # Dynamic sizing: FIXED mode for sim, AUTO_CASH for live
+      # 动态仓位配置：模拟交易使用 FIXED 模式，实盘使用 AUTO_CASH 模式
+      # 报价大小（股数）
       quote-size: 10
+      # 报价大小占资金的比例
       quote-size-bankroll-fraction: 0.001
+      # 资金模式：FIXED（固定）或 AUTO_CASH（自动根据资金调整）
       bankroll-mode: FIXED
+      # 固定资金金额（USD）
       bankroll-usd: 500
+      # 资金刷新间隔（毫秒）
       bankroll-refresh-millis: 10000
+      # 资金平滑系数（用于指数移动平均）
       bankroll-smoothing-alpha: 0.2
+      # 最小资金阈值（USD）
       bankroll-min-threshold: 50
+      # 可用于交易的资金比例
       bankroll-trading-fraction: 0.8
+      # 单个订单最大占资金比例
       max-order-bankroll-fraction: 0.02
+      # 总持仓最大占资金比例
       max-total-bankroll-fraction: 0.5
 
-      # Complete-set arbitrage configuration
-      # NOTE: Top traders don't pre-filter by edge - they quote both sides aggressively
-      # Edge emerges from spread capture + inventory skewing, not from strict filtering
-      complete-set-min-edge: 0.001                    # Near-zero: aggressive quoting
-      complete-set-max-skew-ticks: 0                  # Max ticks to skew based on inventory
-      complete-set-imbalance-shares-for-max-skew: 5000 # Shares imbalance for max skew
+      # 完整套利配置
+      # 注意：顶级交易者不会预先过滤 edge，而是积极地在两侧报价
+      # Edge 来自于价差捕获和库存倾斜，而不是严格的过滤
+      # 最小 edge（接近零：积极报价）
+      complete-set-min-edge: 0.001
+      # 基于库存的最大倾斜 tick 数
+      complete-set-max-skew-ticks: 0
+      # 达到最大倾斜所需的股数不平衡
+      complete-set-imbalance-shares-for-max-skew: 5000
+      # 是否启用补仓功能
       complete-set-top-up-enabled: true
-      complete-set-top-up-seconds-to-end: 120         # Start top-up this far from end
-      complete-set-top-up-min-shares: 80              # Min imbalance to trigger top-up
+      # 距离结束多少秒时开始补仓
+      complete-set-top-up-seconds-to-end: 120
+      # 触发补仓的最小不平衡股数
+      complete-set-top-up-min-shares: 80
+      # 是否启用快速补仓
       complete-set-fast-top-up-enabled: false
-      complete-set-fast-top-up-min-shares: 30         # Min shares for fast top-up
-      complete-set-fast-top-up-min-seconds-after-fill: 30  # Min seconds after fill
-      complete-set-fast-top-up-max-seconds-after-fill: 180 # Max seconds after fill
-      complete-set-fast-top-up-cooldown-millis: 45000 # Cooldown between fast top-ups
-      complete-set-fast-top-up-min-edge: 0            # Breakeven or better for pair completion
+      # 快速补仓的最小股数
+      complete-set-fast-top-up-min-shares: 30
+      # 成交后最小等待时间（秒）才能快速补仓
+      complete-set-fast-top-up-min-seconds-after-fill: 30
+      # 成交后最大等待时间（秒）才能快速补仓
+      complete-set-fast-top-up-max-seconds-after-fill: 180
+      # 快速补仓之间的冷却时间（毫秒）
+      complete-set-fast-top-up-cooldown-millis: 45000
+      # 快速补仓的最小 edge（0 表示盈亏平衡或更好）
+      complete-set-fast-top-up-min-edge: 0
 
-      # Taker mode - cross the spread when edge is favorable
+      # Taker 模式配置 - 当 edge 有利时跨价差吃单
+      # 是否启用 taker 模式
       taker-mode-enabled: true
-      taker-mode-max-edge: 0.004                      # Max edge to take (0.4 cents)
-      taker-mode-max-spread: 0.01                     # Max spread to cross (1 cent)
+      # 最大可接受的 edge（0.004 = 0.4 美分）
+      taker-mode-max-edge: 0.004
+      # 最大可跨的价差（0.01 = 1 美分）
+      taker-mode-max-spread: 0.01
 
+# 日志级别配置
 logging:
   level:
     com.polybot.hft.polymarket.strategy: INFO

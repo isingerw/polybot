@@ -1,20 +1,41 @@
-infrastructure:
-  startup-timeout-seconds: 60
-  health-check-interval-seconds: 5
-  stacks:
-    - name: analytics
-      file-path: ${POLYBOT_HOME:.}/docker-compose.analytics.yaml
-      project-name: polybot
-      expected-services: 2  # redpanda + clickhouse
-      startup-order: 1      # Start first
-    - name: monitoring
-      file-path: ${POLYBOT_HOME:.}/docker-compose.monitoring.yaml
-      project-name: polybot-monitoring
-      expected-services: 4  # prometheus + grafana + alertmanager + node-exporter
-      startup-order: 2      # Start after analytics
+# ============================================
+# Infrastructure Orchestrator Service 开发环境配置
+# ============================================
 
-# Logging - enable debug for infrastructure orchestration
+# 基础设施配置
+infrastructure:
+  # 启动超时时间（秒）
+  startup-timeout-seconds: 60
+  # 健康检查间隔（秒）
+  health-check-interval-seconds: 5
+  # Docker Compose 栈配置列表
+  stacks:
+    # Analytics 栈（RedPanda + ClickHouse）
+    - name: analytics
+      # Docker Compose 文件路径，可通过 POLYBOT_HOME 环境变量覆盖
+      # 如果 POLYBOT_HOME 未设置，使用当前目录（.）
+      file-path: ${POLYBOT_HOME:./}docker-compose.analytics.yaml
+      # Docker Compose 项目名称
+      project-name: polybot
+      # 期望的服务数量（redpanda + clickhouse）
+      expected-services: 2
+      # 启动顺序：数字越小越先启动
+      startup-order: 1
+    # Monitoring 栈（Prometheus + Grafana + AlertManager + Node Exporter）
+    - name: monitoring
+      # Docker Compose 文件路径
+      # 如果 POLYBOT_HOME 未设置，使用当前目录（.）
+      file-path: ${POLYBOT_HOME:./}docker-compose.monitoring.yaml
+      # Docker Compose 项目名称
+      project-name: polybot-monitoring
+      # 期望的服务数量（prometheus + grafana + alertmanager + node-exporter）
+      expected-services: 4
+      # 启动顺序：在 analytics 之后启动
+      startup-order: 2
+
+# 日志级别配置
 logging:
   level:
+    # 基础设施编排器相关日志级别
     com.polybot.infrastructure.orchestrator: DEBUG
     com.polybot.infrastructure.orchestrator.service.DockerComposeLifecycleManager: DEBUG

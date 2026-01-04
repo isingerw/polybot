@@ -1,9 +1,19 @@
+# ============================================
+# Strategy Service 基础配置
+# 策略服务：运行交易策略并生成交易信号
+# ============================================
+
 spring:
+  # 导入公共配置文件
   config:
     import: classpath:polybot-common.yaml
+  # 应用名称
   application:
     name: strategy-service
+  # 激活的开发环境配置
+  profiles:
+    active: develop
 
+# 服务器端口配置
 server:
   port: 8081
-

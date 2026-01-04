@@ -1,33 +1,56 @@
+# ============================================
+# Polybot 公共配置文件
+# 此文件包含所有服务共享的配置
+# ============================================
+
 spring:
+  # 启用虚拟线程（Java 21+ 特性，提高并发性能）
   threads:
     virtual:
       enabled: true
+  
+  # Kafka 消息队列配置
   kafka:
+    # Kafka 服务器地址，可通过环境变量 KAFKA_BOOTSTRAP_SERVERS 覆盖
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
+      # 键序列化器：使用字符串序列化
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # 值序列化器：使用字符串序列化
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # 禁用幂等性以避免重启后的序列号错误
+      # 注意：禁用后可能产生重复消息，但可以避免 OUT_OF_ORDER_SEQUENCE_NUMBER 错误
+      properties:
+        enable.idempotence: false
 
+# Spring Boot Actuator 监控配置
 management:
   endpoints:
     web:
+      # 暴露的监控端点
       exposure:
         include: health,info,metrics,prometheus
   metrics:
+    # 启用 Prometheus 指标导出
     export:
       prometheus:
         enabled: true
+    # 指标标签
     tags:
       application: ${spring.application.name}
       environment: ${hft.mode:PAPER}
   endpoint:
+    # 健康检查端点配置
     health:
       show-details: always
       probes:
         enabled: true
+    # Prometheus 端点配置
     prometheus:
       enabled: true
 
+# 日志配置
 logging:
   level:
+    # Kafka 相关日志级别设置为 WARN，减少日志噪音
     org.apache.kafka: WARN

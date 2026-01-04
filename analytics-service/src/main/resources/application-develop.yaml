@@ -1,6 +1,41 @@
+# ============================================
+# Analytics Service 开发环境配置
+# ============================================
+
 spring:
+  # ClickHouse 数据源配置
   datasource:
+    # 数据库连接 URL，可通过环境变量覆盖
     url: ${ANALYTICS_DB_URL:jdbc:clickhouse://localhost:8123/polybot}
+    # ClickHouse JDBC 驱动类
     driver-class-name: ${ANALYTICS_DB_DRIVER:com.clickhouse.jdbc.ClickHouseDriver}
+    # 数据库用户名，可通过环境变量覆盖
     username: ${ANALYTICS_DB_USERNAME:default}
-    password: ${ANALYTICS_DB_PASSWORD:}
+    # 数据库密码，可通过环境变量覆盖
+    password: ${ANALYTICS_DB_PASSWORD:ylzins2025}
+    # HikariCP 连接池配置
+    hikari:
+      # 初始化失败超时：-1 表示不超时（即使数据库不可用也允许应用启动）
+      initialization-fail-timeout: -1
+      # 连接超时时间（毫秒）
+      connection-timeout: 30000
+      # 最大连接池大小
+      maximum-pool-size: 50
+      # 最小空闲连接数
+      minimum-idle: 5
+  
+  # SQL 初始化配置
+  sql:
+    init:
+      # 禁用自动执行 SQL 初始化脚本（由 Docker Compose 处理）
+      mode: never
+
+# 日志级别配置
+# 注意：management 配置已在 polybot-common.yaml 中定义，无需重复
+logging:
+  level:
+    # ClickHouse 相关日志级别设置为 WARN，减少日志噪音
+    com.clickhouse: WARN
+    com.clickhouse.client.http: WARN
+    com.clickhouse.jdbc: WARN
+    org.apache.coyote.http11.Http11Processor: WARN

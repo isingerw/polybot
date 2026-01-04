@@ -1,57 +1,114 @@
+# ============================================
+# Ingestor Service 开发环境配置
+# ============================================
+
+# 高频交易（HFT）配置
 hft:
+  # 事件发布配置
   events:
     enabled: true
+    # 启动时发布市场 WebSocket 缓存
     market-ws-cache-publish-on-start: true
-    # Publish periodic TOB snapshots to keep decision-time ASOF joins "fresh" even when the book is stable.
+    # 定期发布 TOB（最佳买卖价）快照，保持决策时的 ASOF 连接"新鲜"，即使订单簿稳定
     market-ws-snapshot-publish-millis: 1000
+  # Polymarket 相关配置
   polymarket:
+    # 启用市场 WebSocket 连接
     market-ws-enabled: true
+    # WebSocket 缓存文件路径
     market-ws-cache-path: .cache/ws/market-ws-cache.ingestor.json
+    # WebSocket 缓存刷新间隔（毫秒）
     market-ws-cache-flush-millis: 5000
 
+# 数据采集器配置
 ingestor:
+  # ClickHouse 数据库配置
   clickhouse:
-    url: http://localhost:8123
-    database: polybot
-    user: default
-    password: ""
-    timeout-seconds: 10
+    # ClickHouse HTTP URL，可通过环境变量覆盖
+    url: ${CLICKHOUSE_URL:http://localhost:8123}
+    # 数据库名称，可通过环境变量覆盖
+    database: ${CLICKHOUSE_DATABASE:polybot}
+    # 用户名，可通过环境变量覆盖
+    user: ${CLICKHOUSE_USER:default}
+    # 密码，可通过环境变量覆盖
+    password: ${CLICKHOUSE_PASSWORD:ylzins2025}
+    # 超时时间（秒），可通过环境变量覆盖
+    timeout-seconds: ${CLICKHOUSE_TIMEOUT_SECONDS:10}
+  
+  # Polymarket 数据源配置
   polymarket:
+    # 要分析的目标用户名，可通过环境变量 POLYMARKET_TARGET_USER 设置
     username: ${POLYMARKET_TARGET_USER:}
+  
+  # 轮询配置（用于获取用户交易历史）
   polling:
     enabled: true
+    # 启动时是否回填历史数据
     backfill-on-start: false
+    # 每页数据大小
     page-size: 500
+  
+  # Polygon 链上数据配置
   polygon:
     enabled: true
+    # Polygon RPC 节点 URL
     rpc-url: ${POLYGON_RPC_URL:https://polygon-rpc.com}
+    # 轮询间隔（毫秒）
     poll-interval-millis: 100
+    # 每次轮询的最大收据数
     max-receipts-per-poll: 25
+    # 请求延迟（毫秒），避免请求过快
     request-delay-millis: 100
+    # 收据处理工作线程数
     receipt-workers: 4
+    # 区块时间戳缓存大小
     block-timestamp-cache-size: 50000
+    # 回填配置
     backfill:
       enabled: true
+      # 回填间隔（秒）
       interval-seconds: 30
+      # 批次大小
       batch-size: 250
+      # 回填请求延迟（毫秒）
       request-delay-millis: 0
+  
+  # 市场 WebSocket 配置
   market-ws:
     enabled: true
+    # 市场发现间隔（秒）
     discovery-interval-seconds: 30
+    # 15分钟市场：向前查找分钟数
     lookback-15m-minutes: 30
+    # 15分钟市场：向后查找分钟数
     lookahead-15m-minutes: 15
+    # 1小时市场：向前查找小时数
     lookback-1h-hours: 2
+    # 1小时市场：向后查找小时数
     lookahead-1h-hours: 1
+    # 请求延迟（毫秒）
     request-delay-millis: 100
+  
+  # 市场上下文配置（用于获取市场详细信息）
   market-context:
     enabled: true
+    # 市场交易记录限制
     market-trades-limit: 50
+    # 市场交易最小间隔（秒）
     market-trades-min-interval-seconds: 10
+    # CLOB 订单簿最小间隔（秒）
     clob-book-min-interval-seconds: 1
+    # Gamma API 最小间隔（秒）
     gamma-min-interval-seconds: 60
+    # Gamma API 轮询间隔（秒）
     gamma-poll-interval-seconds: 60
+    # Gamma API 向前查找时间（秒）
     gamma-poll-lookahead-seconds: 3600
+    # Gamma API 最大空闲时间（秒）
     gamma-poll-max-idle-seconds: 21600
+    # 请求延迟（毫秒）
     request-delay-millis: 100
+    # 最大跟踪市场数
     max-tracked-markets: 500
+    # 交易上下文最大年龄（秒）
     on-trade-context-max-age-seconds: 300

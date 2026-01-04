@@ -1,8 +1,19 @@
+# ============================================
+# Infrastructure Orchestrator Service 基础配置
+# 基础设施编排服务：管理 Docker Compose 基础设施栈的启动和停止
+# ============================================
+
 spring:
+  # 导入公共配置文件
   config:
     import: classpath:polybot-common.yaml
+  # 应用名称
   application:
     name: infrastructure-orchestrator-service
+  # 激活的开发环境配置
+  profiles:
+    active: develop
 
+# 服务器端口配置
 server:
   port: 8084

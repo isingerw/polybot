@@ -6,7 +6,8 @@ global:
   resolve_timeout: 5m
 
   # Slack configuration (set SLACK_WEBHOOK_URL environment variable)
-  slack_api_url: '${SLACK_WEBHOOK_URL}'
+  # Only set if SLACK_WEBHOOK_URL is provided
+  # slack_api_url: '${SLACK_WEBHOOK_URL}'
 
 # Alert routing tree
 route:
@@ -80,87 +81,92 @@ inhibit_rules:
 
 # Notification receivers
 receivers:
-  # General Slack channel - all alerts
+  # General receiver - minimal config (alerts will be stored but not sent without Slack webhook)
   - name: 'slack-general'
-    slack_configs:
-      - channel: '#polybot-alerts'
-        title: '{{ .GroupLabels.alertname }}'
-        text: |-
-          {{ range .Alerts }}
-          *Alert:* {{ .Annotations.summary }}
-          *Severity:* {{ .Labels.severity }}
-          *Description:* {{ .Annotations.description }}
-          *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          {{ end }}
-        send_resolved: true
-        color: |-
-          {{ if eq .Status "firing" }}
-            {{ if eq .GroupLabels.severity "critical" }}danger{{ else }}warning{{ end }}
-          {{ else }}good{{ end }}
+    # To enable Slack notifications, set SLACK_WEBHOOK_URL and uncomment below:
+    # slack_configs:
+    #   - channel: '#polybot-alerts'
+    #     title: '{{ .GroupLabels.alertname }}'
+    #     text: |-
+    #       {{ range .Alerts }}
+    #       *Alert:* {{ .Annotations.summary }}
+    #       *Severity:* {{ .Labels.severity }}
+    #       *Description:* {{ .Annotations.description }}
+    #       *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+    #       {{ end }}
+    #     send_resolved: true
+    #     color: |-
+    #       {{ if eq .Status "firing" }}
+    #         {{ if eq .GroupLabels.severity "critical" }}danger{{ else }}warning{{ end }}
+    #       {{ else }}good{{ end }}
 
   # Critical alerts - urgent Slack channel with @here mention
   - name: 'slack-critical'
-    slack_configs:
-      - channel: '#polybot-critical'
-        title: ':rotating_light: CRITICAL ALERT: {{ .GroupLabels.alertname }}'
-        text: |-
-          <!here> *IMMEDIATE ACTION REQUIRED*
-
-          {{ range .Alerts }}
-          *Alert:* {{ .Annotations.summary }}
-          *Description:* {{ .Annotations.description }}
-          *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          *Instance:* {{ .Labels.instance }}
-          {{ end }}
-
-          *Action Items:*
-          1. Check service logs immediately
-          2. Verify positions and exposure
-          3. Consider stopping trading if risk-related
-        send_resolved: true
-        color: 'danger'
+    # If SLACK_WEBHOOK_URL is set, uncomment slack_configs below
+    # slack_configs:
+    #   - channel: '#polybot-critical'
+    #     title: ':rotating_light: CRITICAL ALERT: {{ .GroupLabels.alertname }}'
+    #     text: |-
+    #       <!here> *IMMEDIATE ACTION REQUIRED*
+    #
+    #       {{ range .Alerts }}
+    #       *Alert:* {{ .Annotations.summary }}
+    #       *Description:* {{ .Annotations.description }}
+    #       *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+    #       *Instance:* {{ .Labels.instance }}
+    #       {{ end }}
+    #
+    #       *Action Items:*
+    #       1. Check service logs immediately
+    #       2. Verify positions and exposure
+    #       3. Consider stopping trading if risk-related
+    #     send_resolved: true
+    #     color: 'danger'
 
   # Risk management alerts
   - name: 'slack-risk'
-    slack_configs:
-      - channel: '#polybot-risk'
-        title: ':warning: Risk Alert: {{ .GroupLabels.alertname }}'
-        text: |-
-          {{ range .Alerts }}
-          *Alert:* {{ .Annotations.summary }}
-          *Description:* {{ .Annotations.description }}
-          *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          {{ end }}
-        send_resolved: true
-        color: 'warning'
+    # If SLACK_WEBHOOK_URL is set, uncomment slack_configs below
+    # slack_configs:
+    #   - channel: '#polybot-risk'
+    #     title: ':warning: Risk Alert: {{ .GroupLabels.alertname }}'
+    #     text: |-
+    #       {{ range .Alerts }}
+    #       *Alert:* {{ .Annotations.summary }}
+    #       *Description:* {{ .Annotations.description }}
+    #       *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+    #       {{ end }}
+    #     send_resolved: true
+    #     color: 'warning'
 
   # Trading operations alerts
   - name: 'slack-trading'
-    slack_configs:
-      - channel: '#polybot-trading'
-        title: ':chart_with_upwards_trend: Trading Alert: {{ .GroupLabels.alertname }}'
-        text: |-
-          {{ range .Alerts }}
-          *Alert:* {{ .Annotations.summary }}
-          *Description:* {{ .Annotations.description }}
-          *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          {{ end }}
-        send_resolved: true
-        color: 'warning'
+    # If SLACK_WEBHOOK_URL is set, uncomment slack_configs below
+    # slack_configs:
+    #   - channel: '#polybot-trading'
+    #     title: ':chart_with_upwards_trend: Trading Alert: {{ .GroupLabels.alertname }}'
+    #     text: |-
+    #       {{ range .Alerts }}
+    #       *Alert:* {{ .Annotations.summary }}
+    #       *Description:* {{ .Annotations.description }}
+    #       *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+    #       {{ end }}
+    #     send_resolved: true
+    #     color: 'warning'
 
   # Data quality alerts
   - name: 'slack-data'
-    slack_configs:
-      - channel: '#polybot-data'
-        title: ':database: Data Alert: {{ .GroupLabels.alertname }}'
-        text: |-
-          {{ range .Alerts }}
-          *Alert:* {{ .Annotations.summary }}
-          *Description:* {{ .Annotations.description }}
-          *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
-          {{ end }}
-        send_resolved: true
-        color: 'warning'
+    # If SLACK_WEBHOOK_URL is set, uncomment slack_configs below
+    # slack_configs:
+    #   - channel: '#polybot-data'
+    #     title: ':database: Data Alert: {{ .GroupLabels.alertname }}'
+    #     text: |-
+    #       {{ range .Alerts }}
+    #       *Alert:* {{ .Annotations.summary }}
+    #       *Description:* {{ .Annotations.description }}
+    #       *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+    #       {{ end }}
+    #     send_resolved: true
+    #     color: 'warning'
 
 # Templates for notification formatting
 templates:

@@ -1,37 +1,82 @@
+# ============================================
+# Executor Service 开发环境配置
+# ============================================
+
+# 高频交易（HFT）配置
 hft:
+  # 交易模式：PAPER（模拟交易）或 LIVE（实盘交易）
   mode: PAPER
+  # 事件发布配置
   events:
     enabled: true
+  # Polymarket 相关配置
   polymarket:
+    # 启用市场 WebSocket 连接
     market-ws-enabled: true
+    # 认证配置
     auth:
-      private-key: ""
+      # 钱包私钥（用于签名交易）
+      private-key: ${POLYMARKET_PRIVATE_KEY:}
+      # 签名类型
+      signature-type: ${POLYMARKET_SIGNATURE_TYPE:0}
+      # 资金地址
+      funder-address: ${POLYMARKET_FUNDER_ADDRESS:}
+      # API 密钥
+      api-key: ${POLYMARKET_API_KEY:}
+      # API 密钥
+      api-secret: ${POLYMARKET_API_SECRET:}
+      # API 密钥
+      api-passphrase: ${POLYMARKET_API_PASSPHRASE:}
+      # 随机数
+      nonce: ${POLYMARKET_API_NONCE:0}
+      # 是否自动创建或派生 API 凭证
       auto-create-or-derive-api-creds: false
 
+# 日志级别配置
 logging:
   level:
     com.polybot.hft: INFO
     com.polybot.hft.executor.settlement: DEBUG
 
+# 执行器配置
 executor:
+  # 模拟交易配置
   sim:
+    # 启用模拟交易
     enabled: true
+    # 启用模拟成交
     fills-enabled: true
+    # 成交轮询间隔（毫秒）
     fill-poll-millis: 500
+    # 每次轮询的 maker 成交概率
     maker-fill-probability-per-poll: 0.01
+    # 每个 tick 的成交概率乘数
     maker-fill-probability-multiplier-per-tick: 1.0
+    # 每次轮询的最大成交概率
     maker-fill-probability-max-per-poll: 0.015
+    # 剩余订单的成交比例
     maker-fill-fraction-of-remaining: 0.25
 
+  # 链上交易配置
   onchain:
+    # Polygon RPC 节点 URL
     rpc-url: ${POLYGON_RPC_URL:https://polygon-rpc.com}
+    # 代理钱包工厂地址
     proxy-wallet-factory-address: ""
 
+  # 结算配置
   settlement:
+    # 是否启用自动结算
     enabled: false
+    # 是否为干运行模式（不实际执行）
     dry-run: true
+    # 结算轮询间隔（毫秒）
     poll-interval-millis: 30000
+    # 最小合并股数
     min-merge-shares: 10
+    # 最大重试次数
     max-retries: 3
+    # 是否只在接近结束时合并
     merge-only-near-end: true
+    # 距离结束多少秒时开始合并
     merge-seconds-before-end: 600

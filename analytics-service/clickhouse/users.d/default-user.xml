@@ -1,6 +1,8 @@
 <clickhouse>
   <users>
     <default>
+      <!-- 密码：ylzins2025 -->
+      <password>ylzins2025</password>
       <networks>
         <ip>::/0</ip>
         <ip>0.0.0.0/0</ip>

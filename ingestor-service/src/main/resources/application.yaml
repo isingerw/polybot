@@ -1,9 +1,19 @@
+# ============================================
+# Ingestor Service 基础配置
+# 数据采集服务：从 Polymarket 和 Polygon 链上采集数据并写入 ClickHouse
+# ============================================
+
 spring:
+  # 导入公共配置文件
   config:
     import: classpath:polybot-common.yaml
+  # 应用名称
   application:
     name: ingestor-service
+  # 激活的开发环境配置
+  profiles:
+    active: develop
 
+# 服务器端口配置
 server:
   port: 8083
-

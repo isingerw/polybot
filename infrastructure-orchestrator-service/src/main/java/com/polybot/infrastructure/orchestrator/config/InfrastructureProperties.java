@@ -4,13 +4,14 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @Component
 @ConfigurationProperties(prefix = "infrastructure")
 public class InfrastructureProperties {
-    private List<DockerComposeStack> stacks;
+    private List<DockerComposeStack> stacks = new ArrayList<>();
     private int startupTimeoutSeconds = 60;
     private int healthCheckIntervalSeconds = 5;
 

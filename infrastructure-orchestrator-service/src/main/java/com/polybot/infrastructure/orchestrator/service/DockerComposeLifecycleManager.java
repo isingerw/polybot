@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,6 +31,12 @@ public class DockerComposeLifecycleManager {
     public void startInfrastructureStacks() {
         log.info("Starting infrastructure stacks lifecycle manager");
         try {
+            // Check if stacks are configured
+            if (properties.getStacks() == null || properties.getStacks().isEmpty()) {
+                log.warn("No infrastructure stacks configured. Skipping stack startup.");
+                return;
+            }
+
             // Sort stacks by startup order
             List<DockerComposeStack> orderedStacks = properties.getStacks().stream()
                 .sorted(Comparator.comparingInt(DockerComposeStack::getStartupOrder))
@@ -64,6 +69,12 @@ public class DockerComposeLifecycleManager {
     public void stopInfrastructureStacks() {
         if (!stacksRunning) {
             log.info("Infrastructure stacks are not running, skipping shutdown");
+            return;
+        }
+
+        // Check if stacks are configured
+        if (properties.getStacks() == null || properties.getStacks().isEmpty()) {
+            log.info("No infrastructure stacks configured, skipping shutdown");
             return;
         }
 
@@ -104,60 +115,117 @@ public class DockerComposeLifecycleManager {
 
     private Path resolveComposeFilePath(DockerComposeStack stack) {
         String configuredPath = stack.getFilePath();
-        Path path = Paths.get(configuredPath);
+        log.debug("Resolving Docker Compose file path for stack '{}': {}", stack.getName(), configuredPath);
+        
+        Path currentDir = Paths.get(".").toAbsolutePath().normalize();
+        log.debug("Current working directory: {}", currentDir);
+        
+        // Normalize the path string (remove ./ prefix if present, handle absolute paths incorrectly starting with /)
+        String normalizedPath = configuredPath;
+        if (normalizedPath.startsWith("./")) {
+            normalizedPath = normalizedPath.substring(2);
+            log.debug("Removed './' prefix, normalized path: {}", normalizedPath);
+        }
+        
+        // If path starts with / but file doesn't exist, it might be a misconfigured absolute path
+        // Extract just the filename and try relative to current directory
+        if (normalizedPath.startsWith("/") && !normalizedPath.equals("/")) {
+            String filename = normalizedPath.substring(1); // Remove leading /
+            log.debug("Path starts with / but may be misconfigured, trying filename: {}", filename);
+            
+            // Try relative to current working directory first
+            Path cwdPath = currentDir.resolve(filename).normalize();
+            log.debug("Trying path relative to CWD: {}", cwdPath);
+            if (Files.exists(cwdPath)) {
+                log.debug("Found file at CWD relative path: {}", cwdPath);
+                return cwdPath;
+            }
+        }
+        
+        Path path = Paths.get(normalizedPath);
 
         // If absolute path exists, use it
         if (path.isAbsolute() && Files.exists(path)) {
+            log.debug("Found absolute path: {}", path);
             return path;
         }
 
         // Try relative to current working directory
-        Path cwdPath = Paths.get(".").toAbsolutePath().resolve(configuredPath).normalize();
+        Path cwdPath = currentDir.resolve(normalizedPath).normalize();
+        log.debug("Trying path relative to CWD: {}", cwdPath);
         if (Files.exists(cwdPath)) {
+            log.debug("Found file at CWD relative path: {}", cwdPath);
             return cwdPath;
         }
 
         // Try relative to project root (go up from module directory)
-        Path projectRootPath = Paths.get("..").toAbsolutePath().resolve(configuredPath).normalize();
-        if (Files.exists(projectRootPath)) {
-            return projectRootPath;
+        Path projectRootPath = currentDir.getParent();
+        if (projectRootPath != null) {
+            Path parentPath = projectRootPath.resolve(normalizedPath).normalize();
+            log.debug("Trying path relative to parent directory: {}", parentPath);
+            if (Files.exists(parentPath)) {
+                log.debug("Found file at parent relative path: {}", parentPath);
+                return parentPath;
+            }
         }
 
-        // Return the configured path as-is (will fail in validation)
-        return path.toAbsolutePath();
+        // Try from project root (if we're in a subdirectory, go up to find project root)
+        // Check if current directory name suggests we're in a service subdirectory
+        String currentDirName = currentDir.getFileName().toString();
+        if (currentDirName.endsWith("-service")) {
+            Path projectRoot = currentDir.getParent();
+            if (projectRoot != null) {
+                Path projectRootFile = projectRoot.resolve(normalizedPath).normalize();
+                log.debug("Trying path from project root (detected service directory): {}", projectRootFile);
+                if (Files.exists(projectRootFile)) {
+                    log.debug("Found file at project root: {}", projectRootFile);
+                    return projectRootFile;
+                }
+            }
+        }
+
+        // Return the CWD path (will fail in validation, but at least it's a valid path)
+        log.warn("Could not find Docker Compose file, will return CWD path for validation error: {}", cwdPath);
+        return cwdPath;
     }
 
     private void cleanupExistingContainers(DockerComposeStack stack) {
-        log.info("Checking for existing containers...");
+        log.info("Cleaning up any existing containers...");
         try {
+            // Always try to clean up, using --remove-orphans to handle containers from previous runs
             ProcessBuilder pb = new ProcessBuilder(
                 "docker", "compose",
                 "-f", stack.getFilePath(),
                 "-p", stack.getProjectName(),
-                "ps", "-q"
+                "down", "--remove-orphans"
             );
             pb.redirectErrorStream(true);
 
             Process process = pb.start();
-            List<String> output = new ArrayList<>();
+            
+            // Log output for debugging
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    output.add(line.trim());
+                    log.debug("docker-compose down: {}", line);
                 }
             }
-            process.waitFor();
-
-            // If there are existing containers, clean them up
-            if (!output.isEmpty() && output.stream().anyMatch(line -> !line.isEmpty())) {
-                log.info("Found existing containers, cleaning up...");
-                stopStack(stack);
-                log.info("Cleanup complete");
+            
+            boolean completed = process.waitFor(30, TimeUnit.SECONDS);
+            if (completed) {
+                int exitCode = process.exitValue();
+                if (exitCode == 0) {
+                    log.debug("Cleanup completed successfully");
+                } else {
+                    // Exit code 1 might mean no containers existed, which is fine
+                    log.debug("Cleanup completed with exit code: {} (this is usually fine if no containers existed)", exitCode);
+                }
             } else {
-                log.debug("No existing containers found");
+                log.warn("Cleanup timed out after 30 seconds, but continuing anyway");
+                process.destroyForcibly();
             }
         } catch (Exception e) {
-            log.warn("Failed to check for existing containers, continuing anyway", e);
+            log.warn("Failed to cleanup existing containers, continuing anyway", e);
         }
     }
 
@@ -263,6 +331,14 @@ public class DockerComposeLifecycleManager {
 
     public InfrastructureStatus getInfrastructureStatus() {
         List<StackStatus> stackStatuses = new ArrayList<>();
+
+        if (properties.getStacks() == null || properties.getStacks().isEmpty()) {
+            return new InfrastructureStatus(
+                stacksRunning,
+                "NO_STACKS_CONFIGURED",
+                stackStatuses
+            );
+        }
 
         for (DockerComposeStack stack : properties.getStacks()) {
             try {

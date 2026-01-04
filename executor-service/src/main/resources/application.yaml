@@ -1,20 +1,19 @@
+# ============================================
+# Executor Service 基础配置
+# 执行服务：处理订单执行、持仓管理和结算
+# ============================================
+
 spring:
+  # 导入公共配置文件
   config:
     import: classpath:polybot-common.yaml
+  # 应用名称
   application:
     name: executor-service
+  # 激活的开发环境配置
+  profiles:
+    active: develop
 
+# 服务器端口配置
 server:
   port: 8080
-
-hft:
-  polymarket:
-    auth:
-      private-key: ${POLYMARKET_PRIVATE_KEY:}
-      signature-type: ${POLYMARKET_SIGNATURE_TYPE:0}
-      funder-address: ${POLYMARKET_FUNDER_ADDRESS:}
-      api-key: ${POLYMARKET_API_KEY:}
-      api-secret: ${POLYMARKET_API_SECRET:}
-      api-passphrase: ${POLYMARKET_API_PASSPHRASE:}
-      nonce: ${POLYMARKET_API_NONCE:0}
-
